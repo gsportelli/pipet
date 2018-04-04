@@ -1,35 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#***************************************************************************
-#*                       ______   ____    __°   ______
-#*                      / ____/  /  _/   /_/   / ____/
-#*                     / /_      / /    /_/   / / __
-#*                    / __/    _/ /   _/_/   / /_/ /
-#*                   /_/      /___/  /___/   \____/
-#*
-#*    FUNCTIONAL IMAGING AND INSTRUMENTATION GROUP - UNIVERSITA' DI PISA
-#*
-#***************************************************************************
-#*
-#*  Project     : Laboratorio di Fisica Medica
-#!  @file         pnpparse.py
-#!  @brief        Raw data parsing package
-#*
-#*  Author(s)   : Giancarlo Sportelli (GK)
-#*                see AUTHORS for complete info
-#*  License     : see LICENSE for info
-#*
-#***************************************************************************
-#*
-#*                             R e v i s i o n s
-#*
-#*--------------------------------------------------------------------------
-#*  Timestamp             Author    Version    Description
-#*--------------------------------------------------------------------------
-#*  22:48 08/02/2016      GK         0.1       Initial design
-#*  further revisions are tagged in the git repository
-#***************************************************************************
-
 from __future__ import print_function
 import numpy
 import sys
@@ -49,7 +19,7 @@ single_type = numpy.dtype([
 event_type = numpy.dtype([('a',single_type),('b',single_type),('pos',numpy.uint32),('status',numpy.uint16)])
 event_type_size = 2 * single_type_size
 chk_vector = numpy.array([[4,0,1,2,3]],dtype=numpy.uint16)
-convmap_field_type = numpy.dtype([('name','a3'),('word',numpy.uint8),('len',numpy.uint8),('ofs',numpy.uint8)])
+convmap_field_type = numpy.dtype([('name','U3'),('word',numpy.uint8),('len',numpy.uint8),('ofs',numpy.uint8)])
 convmap = numpy.array([('mrk',0,6,0), ('dip',0,6,6), ('dco',0,1,12), ('tb0',4,1,12), ('tb1',3,1,12), ('tb2',2,1,12), ('tb3',1,1,12),
                        ('ck0',0,3,13), ('ck1',1,3,13), ('ck2',2,3,13), ('ck3',3,3,13), ('ck4',4,3,13),
                        ('xa',1,12,0), ('xb',2,12,0), ('ya',3,12,0), ('yb',4,12,0),
@@ -93,7 +63,7 @@ def evt2str(e):
 
 def raw2evt(raw):
     sng = raw2sng(raw)
-    evt = numpy.zeros(sng.size/2,dtype=event_type)
+    evt = numpy.zeros(sng.size//2,dtype=event_type)
     evt['a'] = sng[::2]
     evt['b'] = sng[1::2]
     marker_match_check = and_reduce(
@@ -120,8 +90,8 @@ def raw2evt(raw):
     return evt
 
 def raw2sng(raw):
-    step = single_type_size/raw_type_size
-    sng = numpy.zeros(raw.size/step,dtype=single_type)
+    step = single_type_size//raw_type_size
+    sng = numpy.zeros(raw.size//step,dtype=single_type)
     for i in convmap:
         sng[i['name']] = numpy.bitwise_and(numpy.right_shift(raw[i['word']::step],i['ofs']),int('1'*i['len'],2))
     ck_array = numpy.array([sng['ck%d'%i] for i in range(chk_vector.size)]).transpose().ravel()
@@ -143,7 +113,7 @@ def evt2raw(evt):
     return raw
 
 def sng2raw(sng):
-    step = single_type_size/raw_type_size
+    step = single_type_size//raw_type_size
     raw = numpy.zeros(sng.size*step,dtype=raw_type)
     raw = numpy.bitwise_or(raw,numpy.left_shift(numpy.bitwise_and(numpy.repeat(chk_vector,sng.size,axis=0).ravel(),0x7),13))
     for i in convmap:
